@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>פג תוקף</title>
+</head>
+
+<body onload="onLoad()">
+    <link href="StyleSheets/MainStyleSheet.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link href="StyleSheets/UserStyleSheet.css" rel="stylesheet" />
+    <script>
+        var systemConfig;
+        var counter = 0;
+        function onLoad() {
+            fileName = 'systemConfig'
+            window.expose.SendExcel("sendReadExcel", fileName);
+            window.expose.ReceiveExcel("receiveReadExcel" + fileName, (data) => {
+                systemConfig = JSON.parse(data)
+                systemConfig.color == "1" ? document.getElementById("background").style.backgroundImage = "url('resources/pinkBackground4.gif')" : document.getElementById("background").style.backgroundImage = "url('resources/greenBackground4.gif')";
+            })
+        }
+        document.addEventListener("keypress", function (e) {
+            if (e.target.tagName !== "INPUT") {
+                var input = document.querySelector(".my-input");
+                input.focus();
+                input.value = e.key;
+                e.preventDefault();
+            }
+            counter += 1;
+            if (counter > 9) {
+                if (document.getElementById('barcode').value == '011429519')
+                    login("System")
+                if (document.getElementById('barcode').value == '999999999')
+                    login("Manage")
+            }
+        });
+        function login(page) {
+            counter = 0;
+            window.location.href = page + '.html';
+        }
+    </script>
+    <div class="background" id="background">
+        <div class="text">
+            <div id="line1">...מצטערים</div>
+            <div id="line2">!פג תוקף הרשיון</div>
+            <input type="text" class="my-input" id="barcode">
+        </div>
+    </div>
+</body>
+
+</html>

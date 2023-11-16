@@ -1,0 +1,38 @@
+﻿@font-face {
+    font-family: "myFirstFont";
+    src:url("../fonts/GanCLMBold.ttf");
+}
+body, html {
+    height: 100%;
+    margin: 0;
+}
+.background {
+    height: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    z-index: -1;
+    padding-top: 2.5%;
+    font-family: "myFirstFont";
+    padding-bottom: 2.5%;
+}
+
+.my-input {
+    border-color: transparent;
+    color:transparent;
+    background-color:transparent;
+}
+
+input:focus {
+    outline: none;
+    color: transparent;
+}
+
+.gif {
+    width: 25vw;
+}
+
+
+
+
+

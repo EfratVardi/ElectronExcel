@@ -1,0 +1,191 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>הגדרות המערכת</title>
+</head>
+
+<body onload="onLoad()">
+
+    <link href="StyleSheets/UserStyleSheet.css" rel="stylesheet" />
+    <link href="StyleSheets/MainStyleSheet.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <script src="js/ag-grid-community.min.js"></script>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/xlsx.full.min.js"></script>
+
+    <script>
+        var gridOptions
+        var tasksConfig = [{
+            "id": 0,
+            "name": "",
+            "points": 0,
+            "sum": 0,
+            "class": false
+        }
+        ]
+        function onLoad() {
+            document.getElementById("background").style.backgroundImage = "url('resources/pinkBackground4.gif')"
+            gridOptions = {
+                columnDefs: [
+                    { headerName: 'קוד', field: "id", },
+                    { headerName: "שם", field: "name", editable: true },
+                    { headerName: "נקודות", field: "points", editable: true },
+                    { headerName: "כמות", field: "sum", editable: true },
+                    {
+                        headerName: "כיתה", field: "class",
+                        cellRenderer: 'agCheckboxCellRenderer',
+                        cellEditor: 'agCheckboxCellEditor',
+                        editable: true,
+                        suppressKeyboardEvent: (params) => params.event.key === ' ',
+                    }
+                ],
+                rowData: tasksConfig,
+                onFirstDataRendered: onFirstDataRendered,
+
+            };
+            var gridDiv = document.querySelector('#tasksGrid');
+            new agGrid.Grid(gridDiv, gridOptions);
+
+            const numPosition = document.getElementById('numPosition');
+            const numStudents = document.getElementById('numStudents');
+            const numClasses = document.getElementById('numClasses');
+
+            numPosition.addEventListener('input', function () {
+                const inputElements1 = numStudents.querySelectorAll('input');
+                const inputElements2 = numClasses.querySelectorAll('input');
+
+                inputElements1.forEach((inputElement) => {
+                    numStudents.removeChild(inputElement);
+                });
+                inputElements2.forEach((inputElement) => {
+                    numClasses.removeChild(inputElement);
+                });
+                for (let i = 1; i <= numPosition.value; i++) {
+                    const newInput1 = document.createElement('input');
+                    newInput1.type = 'number';
+                    newInput1.id = 'numStudents' + i;
+                    newInput1.className = "form-control"
+                    newInput1.value = 0
+                    numStudents.appendChild(newInput1);
+                    const newInput2 = document.createElement('input');
+                    newInput2.type = 'number';
+                    newInput2.id = 'numClasses' + i;
+                    newInput2.className = "form-control"
+                    newInput2.value = 0
+                    numClasses.appendChild(newInput2);
+                }
+            });
+        }
+
+        function create() {
+            for (let i = 1; i <= numPosition.value; i++) {
+                let tasks = createPosition(i);
+                downLoadExcel(tasks, i)
+            }
+        }
+
+        function createPosition(numPosition) {
+            var tasks = []
+            gridOptions.rowData.forEach(element => {
+                console.log(element.getRo)
+                createTask(element.id, numPosition, tasks)
+            });
+            return tasks;
+        }
+
+        function createTask(id, numPosition, tasks) {
+            let prefix
+            if (tasks.length > 0)
+                prefix = tasks[tasks.length - 1].code
+            else
+                prefix = ('5' + numPosition) * 10000000
+            let points = tasksConfig.find(x => x.id == id).points
+            let name = tasksConfig.find(x => x.id == id).name
+            let isClass = tasksConfig.find(x => x.id == id).class
+            let sum = tasksConfig.find(x => x.id == id).sum
+            let numStudents
+            let count
+            if (isClass) {
+                numStudents = document.getElementById('numClasses' + numPosition).value;
+                count = (numStudents * sum) * 1.20
+            }
+            else {
+                numStudents = document.getElementById('numStudents' + numPosition).value;
+                count = (numStudents * sum) * 1.05
+            }
+
+            for (let i = 1; i <= count; i++) {
+                tasks.push({
+                    name: name, code: prefix + i, barcode: '*' + (prefix + i) + '*',
+                    points: points, position: "| " + "עמדה " + numPosition, class: isClass
+                })
+            }
+        }
+
+        function downLoadExcel(tasks, numPosition) {
+            var myFile = "uniqTasks" + numPosition + ".xlsx";
+            var myWorkSheet = XLSX.utils.json_to_sheet(tasks);
+            var myWorkBook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(myWorkBook, myWorkSheet, "myWorkSheet");
+            XLSX.writeFile(myWorkBook, myFile);
+        }
+
+        function onFirstDataRendered(params) {
+            gridOptions.api.sizeColumnsToFit({
+                defaultMinWidth: 50,
+            });
+        }
+        function New() {
+            let data = gridOptions.rowData;
+            data.push({
+                "id": data[data.length - 1].id + 1,
+                "name": "",
+                "points": 0,
+                "sum": 0,
+                "class": false
+            })
+            gridOptions.api.setRowData(data);
+        }
+
+    </script>
+
+    <div class="background" id="background">
+        <div class="text">
+            <div id="line1">מערכת הפקת אקסלים</div>
+            <br />
+            <div style="display: flex;">
+                <form style="direction: rtl; width: 50%;">
+                    <div class="form-row">
+                        <div class="form-group col-md-2">
+                            <label for="title" class="form-label">עמדות</label>
+                            <input type="number" class="form-control" id="numPosition" min="1">
+                        </div>
+
+                        <div class="form-group col-md-4" id="numStudents">
+                            <label for="numPosition1" class="form-label">מספר בנות בעמדה</label>
+                        </div>
+
+                        <div class="form-group col-md-4" id="numClasses">
+                            <label for="numPosition1" class="form-label">מספר כיתות בעמדה</label>
+                        </div>
+
+                        <div class="form-group col-md-2">
+                            <label for="numPosition1" class="form-label">.</label>
+                            <button onclick="create()" class="form-control">התחל</button>
+                        </div>
+                    </div>
+                </form>
+                <div style="width:50%;height: 300px;">
+                    <button style="border:aliceblue;margin-left: 75%" onclick="New()">הוספת משימה</button>
+                    <div id="tasksGrid" style="width:100%;height: 300px;" class="ag-theme-alpine"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
