@@ -14,7 +14,7 @@ function createWindow() {
     }
   })
   mainWindow.loadFile('User.html')
-  mainWindow.fullScreen = true;
+  // mainWindow.fullScreen = true;
   // mainWindow.webContents.openDevTools()
 
   ses.on('will-download', (e, downloadItem, webContents) => {
