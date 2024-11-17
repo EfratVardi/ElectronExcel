@@ -22,7 +22,7 @@
             "id": 0,
             "name": "",
             "points": 0,
-            "sum": 0,
+            "sum": 1,
             "class": false
         }
         ]
@@ -30,8 +30,8 @@
             document.getElementById("background").style.backgroundImage = "url('resources/pinkBackground4.gif')"
             gridOptions = {
                 columnDefs: [
-                    { headerName: 'קוד', field: "id", },
-                    { headerName: "שם", field: "name", editable: true },
+                    { headerName: 'קוד', field: "id",hide:true },
+                    { headerName: "שם", field: "name", editable: true,minWidth:300 },
                     { headerName: "נקודות", field: "points", editable: true },
                     { headerName: "כמות", field: "sum", editable: true },
                     {
@@ -144,7 +144,7 @@
                 "id": data[data.length - 1].id + 1,
                 "name": "",
                 "points": 0,
-                "sum": 0,
+                "sum": 1,
                 "class": false
             })
             gridOptions.api.setRowData(data);
@@ -174,7 +174,7 @@
 
                         <div class="form-group col-md-2">
                             <label for="numPosition1" class="form-label">.</label>
-                            <button onclick="create()" class="form-control">התחל</button>
+                            <button type="button" onclick="create()" class="form-control">התחל</button>
                         </div>
                     </div>
                 </form>
