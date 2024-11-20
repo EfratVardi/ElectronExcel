@@ -18,6 +18,14 @@
 
     <script>
         var gridOptions
+        // [{
+        //     "id": 0,
+        //     "name": "",
+        //     "points": 0,
+        //     "sum": 1,
+        //     "class": false
+        // }
+        // ]
         var defaultTask = [{
             "id": 0,
             "name": "משימה ראשונה",
@@ -34,7 +42,11 @@
         }
         ]
         var tasks = [];
-        var ExcelTasks = []
+        var excelTasks = []
+        const FileType = {
+            EXCEL: "excel",
+            TEXT: "text"
+        };
         function onLoad() {
             document.getElementById("background").style.backgroundImage = "url('resources/pinkBackground4.gif')"
             gridOptions = {
@@ -90,25 +102,25 @@
         }
 
         function create() {
-            const numPosition = document.getElementById('numPosition').value;
-            const numStudents = document.getElementById('numStudents').value;
-            let numtasks = tasks.length;
-            let countInPage = 44 / numtasks
-            let countBlank = 44 % numtasks
-            let count = numStudents / countInPage
-            let interval = 44 - countBlank
-
             fixTasks()
 
-            for (let i = 1; i <= numPosition.value; i++) {
-                addToExcel(i, count);
-                downLoadExcel(i,"uniqTasks")
+            const numPosition = document.getElementById('numPosition').value;
+            let numtasks = tasks.length;
+            let countInPage = Math.floor(44 / numtasks)
+            let countBlank = 44 % numtasks
+            let interval = 44 - countBlank
+
+            for (let i = 1; i <= numPosition; i++) {
+                let numStudents = document.getElementById('numStudents' + numPosition).value;
+                addToExcel(i, numStudents);
+                downLoadExcel(i, "uniqTasks", FileType.EXCEL)
+                addBlank(countBlank, interval)
+                downLoadExcel(i, "כרטיסים", FileType.TEXT)
             }
-            addBlank(countBlank,interval)
-            downLoadExcel("","כרטיסים להדפסה")
         }
 
-        function fixTasks(){
+        function fixTasks() {
+            tasks = [];
             gridOptions.rowData.forEach(element => {
                 for (let i = 0; i < element.sum; i++) {
                     tasks.push({ "name": element.name, "points": element.points })
@@ -116,73 +128,70 @@
             });
         }
 
-        function addToExcel(numPosition, count) {
+        function addToExcel(numPosition, numStudents) {
             //אין תמיכה במשימה כיתתית
-            let prefix
-            if (tasks.length > 0)
-                prefix = tasks[tasks.length - 1].code
-            else
-                prefix = ('5' + numPosition) * 10000000
-
-            for (let i = 1; i <= count; i++) {
+            excelTasks=[]
+            let prefix = ('5' + numPosition) * 10000000
+            let t = 1;
+            for (let i = 0; i < numStudents; i++) {
                 tasks.forEach(task => {
-                    ExcelTasks.push({
-                        name: task.name, code: prefix + i, barcode: '*' + (prefix + i) + '*',
+                    excelTasks.push({
+                        name: task.name, code: prefix + t, barcode: '*' + (prefix + t) + '*',
                         points: task.points, position: "| " + "עמדה " + numPosition
                     })
+                    t++;
                 })
             }
         }
         function addBlank(countBlank, interval) {
-            let resultArray = [...ExcelTasks]; // Create a copy to avoid mutating the original array
+            const updatedExcelTasks = []; // המערך החדש שיכיל את האובייקטים הרגילים והריקים
 
-            for (let i = 0; i < resultArray.length; i++) {
-                // Add `count` objects every `interval` iterations
-                if ((i + 1) % interval === 0) {
-                    for (let j = 0; j < count; j++) {
-                        resultArray.splice(i + 1, 0, { ...objectToAdd }); // Insert `count` objects
-                        i++; // Adjust index to account for the newly inserted object
-                    }
+            while (excelTasks.length > 0) {
+                // חותכים את הקבוצה הבאה מתוך המערך המקורי
+                const group = excelTasks.splice(0, interval);
+
+                // מוסיפים את הקבוצה למערך החדש
+                updatedExcelTasks.push(...group);
+
+                // מוסיפים את האובייקטים הריקים למערך החדש
+                for (let j = 0; j < countBlank; j++) {
+                    updatedExcelTasks.push({});
                 }
             }
+
+            // עדכון המערך המקורי עם המערך החדש
+            excelTasks = updatedExcelTasks;
         }
 
-        function createTasks(id, numPosition) {
-            let prefix
-            if (tasks.length > 0)
-                prefix = tasks[tasks.length - 1].code
-            else
-                prefix = ('5' + numPosition) * 10000000
-            let points = defaultTask.find(x => x.id == id).points
-            let name = defaultTask.find(x => x.id == id).name
-            let isClass = defaultTask.find(x => x.id == id).class
-            let sum = defaultTask.find(x => x.id == id).sum
-            let numStudents
-            let count
-            if (isClass) {
-                numStudents = document.getElementById('numClasses' + numPosition).value;
-                count = (numStudents * sum) * 1.20
-            }
-            else {
-                numStudents = document.getElementById('numStudents' + numPosition).value;
-                count = (numStudents * sum) * 1.05
-            }
+        function downLoadExcel(numPosition, name, type) {
+            if (type === FileType.EXCEL) {
+                // Logic for downloading as Excel
+                var myFile = name + numPosition + ".xlsx";
+                var myWorkSheet = XLSX.utils.json_to_sheet(excelTasks);
+                var myWorkBook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(myWorkBook, myWorkSheet, "myWorkSheet");
+                XLSX.writeFile(myWorkBook, myFile);
+            } else if (type === FileType.TEXT) {
+                // Logic for downloading as Unicode Text with headers in English
+                const headers = "name\tcode\tbarcode\tpoints\tposition";  // Define the column titles in English
+                const rows = excelTasks.map(task =>
+                    `${task.name}\t${task.code}\t${task.barcode}\t${task.points}\t${task.position}`
+                ).join("\n");
 
-            for (let i = 1; i <= count; i++) {
-                tasks.push({
-                    name: name, code: prefix + i, barcode: '*' + (prefix + i) + '*',
-                    points: points, position: "| " + "עמדה " + numPosition, class: isClass
-                })
+                const textContent = `${headers}\n${rows}`; // Add headers to the text content
+
+                const blob = new Blob([textContent], { type: "text/plain;charset=utf-16" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = name + numPosition + ".txt";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url); // Free up memory
             }
         }
 
-        function downLoadExcel(numPosition,name) {
-            var myFile = name + numPosition + ".xlsx";
-            var myWorkSheet = XLSX.utils.json_to_sheet(tasks);
-            var myWorkBook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(myWorkBook, myWorkSheet, "myWorkSheet");
-            XLSX.writeFile(myWorkBook, myFile);
-        }
 
         function onFirstDataRendered(params) {
             gridOptions.api.sizeColumnsToFit({
