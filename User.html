@@ -18,20 +18,29 @@
 
     <script>
         var gridOptions
-        var tasksConfig = [{
+        var defaultTask = [{
             "id": 0,
-            "name": "",
-            "points": 0,
+            "name": "משימה ראשונה",
+            "points": 100,
             "sum": 1,
+            "class": false
+        },
+        {
+            "id": 1,
+            "name": "משימה שנייה",
+            "points": 50,
+            "sum": 2,
             "class": false
         }
         ]
+        var tasks = [];
+        var ExcelTasks = []
         function onLoad() {
             document.getElementById("background").style.backgroundImage = "url('resources/pinkBackground4.gif')"
             gridOptions = {
                 columnDefs: [
-                    { headerName: 'קוד', field: "id",hide:true },
-                    { headerName: "שם", field: "name", editable: true,minWidth:300 },
+                    { headerName: 'קוד', field: "id", hide: true },
+                    { headerName: "שם", field: "name", editable: true, minWidth: 300 },
                     { headerName: "נקודות", field: "points", editable: true },
                     { headerName: "כמות", field: "sum", editable: true },
                     {
@@ -39,10 +48,9 @@
                         cellRenderer: 'agCheckboxCellRenderer',
                         cellEditor: 'agCheckboxCellEditor',
                         editable: true,
-                        suppressKeyboardEvent: (params) => params.event.key === ' ',
                     }
                 ],
-                rowData: tasksConfig,
+                rowData: defaultTask,
                 onFirstDataRendered: onFirstDataRendered,
 
             };
@@ -52,6 +60,7 @@
             const numPosition = document.getElementById('numPosition');
             const numStudents = document.getElementById('numStudents');
             const numClasses = document.getElementById('numClasses');
+
 
             numPosition.addEventListener('input', function () {
                 const inputElements1 = numStudents.querySelectorAll('input');
@@ -81,31 +90,73 @@
         }
 
         function create() {
+            const numPosition = document.getElementById('numPosition').value;
+            const numStudents = document.getElementById('numStudents').value;
+            let numtasks = tasks.length;
+            let countInPage = 44 / numtasks
+            let countBlank = 44 % numtasks
+            let count = numStudents / countInPage
+            let interval = 44 - countBlank
+
+            fixTasks()
+
             for (let i = 1; i <= numPosition.value; i++) {
-                let tasks = createPosition(i);
-                downLoadExcel(tasks, i)
+                addToExcel(i, count);
+                downLoadExcel(i,"uniqTasks")
             }
+            addBlank(countBlank,interval)
+            downLoadExcel("","כרטיסים להדפסה")
         }
 
-        function createPosition(numPosition) {
-            var tasks = []
+        function fixTasks(){
             gridOptions.rowData.forEach(element => {
-                console.log(element.getRo)
-                createTask(element.id, numPosition, tasks)
+                for (let i = 0; i < element.sum; i++) {
+                    tasks.push({ "name": element.name, "points": element.points })
+                }
             });
-            return tasks;
         }
 
-        function createTask(id, numPosition, tasks) {
+        function addToExcel(numPosition, count) {
+            //אין תמיכה במשימה כיתתית
             let prefix
             if (tasks.length > 0)
                 prefix = tasks[tasks.length - 1].code
             else
                 prefix = ('5' + numPosition) * 10000000
-            let points = tasksConfig.find(x => x.id == id).points
-            let name = tasksConfig.find(x => x.id == id).name
-            let isClass = tasksConfig.find(x => x.id == id).class
-            let sum = tasksConfig.find(x => x.id == id).sum
+
+            for (let i = 1; i <= count; i++) {
+                tasks.forEach(task => {
+                    ExcelTasks.push({
+                        name: task.name, code: prefix + i, barcode: '*' + (prefix + i) + '*',
+                        points: task.points, position: "| " + "עמדה " + numPosition
+                    })
+                })
+            }
+        }
+        function addBlank(countBlank, interval) {
+            let resultArray = [...ExcelTasks]; // Create a copy to avoid mutating the original array
+
+            for (let i = 0; i < resultArray.length; i++) {
+                // Add `count` objects every `interval` iterations
+                if ((i + 1) % interval === 0) {
+                    for (let j = 0; j < count; j++) {
+                        resultArray.splice(i + 1, 0, { ...objectToAdd }); // Insert `count` objects
+                        i++; // Adjust index to account for the newly inserted object
+                    }
+                }
+            }
+        }
+
+        function createTasks(id, numPosition) {
+            let prefix
+            if (tasks.length > 0)
+                prefix = tasks[tasks.length - 1].code
+            else
+                prefix = ('5' + numPosition) * 10000000
+            let points = defaultTask.find(x => x.id == id).points
+            let name = defaultTask.find(x => x.id == id).name
+            let isClass = defaultTask.find(x => x.id == id).class
+            let sum = defaultTask.find(x => x.id == id).sum
             let numStudents
             let count
             if (isClass) {
@@ -125,8 +176,8 @@
             }
         }
 
-        function downLoadExcel(tasks, numPosition) {
-            var myFile = "uniqTasks" + numPosition + ".xlsx";
+        function downLoadExcel(numPosition,name) {
+            var myFile = name + numPosition + ".xlsx";
             var myWorkSheet = XLSX.utils.json_to_sheet(tasks);
             var myWorkBook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(myWorkBook, myWorkSheet, "myWorkSheet");
