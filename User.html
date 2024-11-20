@@ -106,12 +106,16 @@
 
             const numPosition = document.getElementById('numPosition').value;
             let numtasks = tasks.length;
-            let countInPage = Math.floor(44 / numtasks)
-            let countBlank = 44 % numtasks
-            let interval = 44 - countBlank
+            let countInPage = 44
+            let countBlank = countInPage % numtasks
+            let interval = countInPage - countBlank
 
             for (let i = 1; i <= numPosition; i++) {
-                let numStudents = document.getElementById('numStudents' + numPosition).value;
+                let numStudents = document.getElementById('numStudents' + numPosition).value * 1.05;
+                if (numStudents * numtasks % interval !== 0) {
+                    const additionalStudents = interval - (numStudents  % interval);
+                    numStudents += additionalStudents; // עדכון מספר התלמידות
+                }
                 addToExcel(i, numStudents);
                 downLoadExcel(i, "uniqTasks", FileType.EXCEL)
                 addBlank(countBlank, interval)
@@ -130,7 +134,8 @@
 
         function addToExcel(numPosition, numStudents) {
             //אין תמיכה במשימה כיתתית
-            excelTasks=[]
+            excelTasks = []
+
             let prefix = ('5' + numPosition) * 10000000
             let t = 1;
             for (let i = 0; i < numStudents; i++) {
