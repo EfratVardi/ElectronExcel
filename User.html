@@ -17,73 +17,100 @@
     <script src="js/xlsx.full.min.js"></script>
 
     <script>
-        var gridOptions
+        var gridOptions1
+        var gridOptions2
+
         // [{
         //     "id": 0,
         //     "name": "",
         //     "points": 0,
-        //     "sum": 1,
-        //     "class": false
-        // }
+        //     "sum": 1        // }
         // ]
-        var defaultTask = [{
+        var defaultTask1 = [{
             "id": 0,
             "name": "משימה ראשונה",
             "points": 100,
-            "sum": 1,
-            "class": false
+            "sum": 1
         },
         {
             "id": 1,
             "name": "משימה שנייה",
             "points": 50,
-            "sum": 2,
-            "class": false
+            "sum": 2
+        }
+        ]
+        var defaultTask2 = [{
+            "id": 0,
+            "name": "משימה ראשונה",
+            "points": 100,
+            "multiple": true
+        },
+        {
+            "id": 1,
+            "name": "משימה שנייה",
+            "points": 50,
+            "multiple": false
         }
         ]
         var tasks = [];
         var excelTasks = []
+        var countInPage = 44
+        var numtasks
+        var countTasksInPage
+        var code
+        var position
+
         const FileType = {
             EXCEL: "excel",
             TEXT: "text"
         };
+
         function onLoad() {
             document.getElementById("background").style.backgroundImage = "url('resources/pinkBackground4.gif')"
-            gridOptions = {
-                columnDefs: [
-                    { headerName: 'קוד', field: "id", hide: true },
-                    { headerName: "שם", field: "name", editable: true, minWidth: 300 },
-                    { headerName: "נקודות", field: "points", editable: true },
-                    { headerName: "כמות", field: "sum", editable: true },
-                    {
-                        headerName: "כיתה", field: "class",
-                        cellRenderer: 'agCheckboxCellRenderer',
-                        cellEditor: 'agCheckboxCellEditor',
-                        editable: true,
-                    }
-                ],
-                rowData: defaultTask,
-                onFirstDataRendered: onFirstDataRendered,
+            const taskType = document.getElementById('taskType');
+            if (taskType.value == "0") {
+                gridOptions1 = {
+                    columnDefs: [
+                        { headerName: 'קוד', field: "id", hide: true },
+                        { headerName: "שם", field: "name", editable: true, minWidth: 300 },
+                        { headerName: "נקודות", field: "points", editable: true },
+                        { headerName: "כמות", field: "sum", editable: true }
+                    ],
+                    rowData: defaultTask,
+                    enableRtl: true,
+                    onFirstDataRendered: onFirstDataRendered,
+                };
+                var gridDiv = document.querySelector('#tasksGrid');
+                new agGrid.Grid(gridDiv, gridOptions1);
+            }
+            else {
+                gridOptions2 = {
+                    columnDefs: [
+                        { headerName: 'קוד', field: "id", hide: true },
+                        { headerName: "שם", field: "name", editable: true, minWidth: 300 },
+                        { headerName: "נקודות", field: "points", editable: true },
+                        { headerName: "הגשה מרובה", field: "multiple", editable: true }
+                    ],
+                    rowData: defaultTask2,
+                    enableRtl: true,
+                    onFirstDataRendered: onFirstDataRendered,
+                };
+                var gridDiv = document.querySelector('#tasksGrid');
+                new agGrid.Grid(gridDiv, gridOptions2);
+            }
 
-            };
-            var gridDiv = document.querySelector('#tasksGrid');
-            new agGrid.Grid(gridDiv, gridOptions);
 
             const numPosition = document.getElementById('numPosition');
             const numStudents = document.getElementById('numStudents');
-            const numClasses = document.getElementById('numClasses');
 
 
             numPosition.addEventListener('input', function () {
                 const inputElements1 = numStudents.querySelectorAll('input');
-                const inputElements2 = numClasses.querySelectorAll('input');
 
                 inputElements1.forEach((inputElement) => {
                     numStudents.removeChild(inputElement);
                 });
-                inputElements2.forEach((inputElement) => {
-                    numClasses.removeChild(inputElement);
-                });
+
                 for (let i = 1; i <= numPosition.value; i++) {
                     const newInput1 = document.createElement('input');
                     newInput1.type = 'number';
@@ -91,35 +118,39 @@
                     newInput1.className = "form-control"
                     newInput1.value = 0
                     numStudents.appendChild(newInput1);
-                    const newInput2 = document.createElement('input');
-                    newInput2.type = 'number';
-                    newInput2.id = 'numClasses' + i;
-                    newInput2.className = "form-control"
-                    newInput2.value = 0
-                    numClasses.appendChild(newInput2);
                 }
             });
+
+            taskType.addEventListener('change', function () {
+                taskType.value == '1' ?
+                    uniqTaskConfig.style.visibility = "hidden" :
+                    uniqTaskConfig.style.visibility = "visible";
+            })
         }
 
-        function create() {
+        function start() {
+            taskType.value == "1" ? createTasks() : createUniqTasks();
+            showStatistics()
+        }
+
+        function createTasks() {
+
+            downLoadExcel("כרטיסים", FileType.TEXT)
+            downLoadExcel("uniqTasks", FileType.EXCEL)
+
+        }
+
+        function createUniqTasks() {
             fixTasks()
-
-            const numPosition = document.getElementById('numPosition').value;
-            let numtasks = tasks.length;
-            let countInPage = 44
-            let countBlank = countInPage % numtasks
-            let interval = countInPage - countBlank
-
-            for (let i = 1; i <= numPosition; i++) {
-                let numStudents = document.getElementById('numStudents' + numPosition).value * 1.05;
-                if (numStudents * numtasks % interval !== 0) {
-                    const additionalStudents = interval - (numStudents  % interval);
-                    numStudents += additionalStudents; // עדכון מספר התלמידות
-                }
-                addToExcel(i, numStudents);
-                downLoadExcel(i, "uniqTasks", FileType.EXCEL)
-                addBlank(countBlank, interval)
-                downLoadExcel(i, "כרטיסים", FileType.TEXT)
+            let countPosition = document.getElementById('numPosition').value;
+            for (let i = 1; i <= countPosition; i++) {
+                position = i;
+                let numStudents = document.getElementById('numStudents' + position).value * 1.05;
+                let countPages = Math.round(numStudents / countTasksInPage)
+                addToExcel(countPages);
+                downLoadExcel("כרטיסים", FileType.TEXT)
+                removeBlanks()
+                downLoadExcel("uniqTasks", FileType.EXCEL)
             }
         }
 
@@ -130,48 +161,51 @@
                     tasks.push({ "name": element.name, "points": element.points })
                 }
             });
+            numtasks = tasks.length;
+            countTasksInPage = Math.floor(countInPage / numtasks)
         }
 
-        function addToExcel(numPosition, numStudents) {
-            //אין תמיכה במשימה כיתתית
+        function addToExcel(countPages) {
+            code = ('5' + position) * 10000000
             excelTasks = []
+            for (let i = 0; i < countPages; i++) {
+                creatPage()
+            }
+        }
 
-            let prefix = ('5' + numPosition) * 10000000
-            let t = 1;
-            for (let i = 0; i < numStudents; i++) {
-                tasks.forEach(task => {
-                    excelTasks.push({
-                        name: task.name, code: prefix + t, barcode: '*' + (prefix + t) + '*',
-                        points: task.points, position: "| " + "עמדה " + numPosition
-                    })
-                    t++;
+        function creatPage() {
+            for (let i = 0; i < countTasksInPage; i++) {
+                addTasks()
+            }
+            addBlanks();
+        }
+
+        function addTasks() {
+            tasks.forEach(task => {
+                excelTasks.push({
+                    name: task.name, code: code, barcode: '*' + (code) + '*',
+                    points: task.points, position: "| " + "עמדה " + position
                 })
-            }
-        }
-        function addBlank(countBlank, interval) {
-            const updatedExcelTasks = []; // המערך החדש שיכיל את האובייקטים הרגילים והריקים
-
-            while (excelTasks.length > 0) {
-                // חותכים את הקבוצה הבאה מתוך המערך המקורי
-                const group = excelTasks.splice(0, interval);
-
-                // מוסיפים את הקבוצה למערך החדש
-                updatedExcelTasks.push(...group);
-
-                // מוסיפים את האובייקטים הריקים למערך החדש
-                for (let j = 0; j < countBlank; j++) {
-                    updatedExcelTasks.push({});
-                }
-            }
-
-            // עדכון המערך המקורי עם המערך החדש
-            excelTasks = updatedExcelTasks;
+                code++
+            })
         }
 
-        function downLoadExcel(numPosition, name, type) {
+        function addBlanks() {
+            let countBlank = countInPage % numtasks
+            for (let i = 0; i < countBlank; i++) {
+                excelTasks.push({});
+            }
+        }
+
+        function removeBlanks() {
+            const excelTasks = excelTasks.filter(obj => Object.keys(obj).length > 0);
+        }
+
+
+        function downLoadExcel(name, type) {
             if (type === FileType.EXCEL) {
                 // Logic for downloading as Excel
-                var myFile = name + numPosition + ".xlsx";
+                var myFile = name + position + ".xlsx";
                 var myWorkSheet = XLSX.utils.json_to_sheet(excelTasks);
                 var myWorkBook = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(myWorkBook, myWorkSheet, "myWorkSheet");
@@ -189,7 +223,7 @@
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement("a");
                 link.href = url;
-                link.download = name + numPosition + ".txt";
+                link.download = name + position + ".txt";
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -197,20 +231,22 @@
             }
         }
 
+        function showStatistics() {
+
+        }
 
         function onFirstDataRendered(params) {
             gridOptions.api.sizeColumnsToFit({
-                defaultMinWidth: 50,
             });
         }
-        function New() {
+
+        function newTask() {
             let data = gridOptions.rowData;
             data.push({
                 "id": data[data.length - 1].id + 1,
                 "name": "",
                 "points": 0,
-                "sum": 1,
-                "class": false
+                "sum": 1
             })
             gridOptions.api.setRowData(data);
         }
@@ -221,30 +257,40 @@
         <div class="text">
             <div id="line1">מערכת הפקת אקסלים</div>
             <br />
+            <br />
+            <br />
+            <br />
+
             <div style="display: flex;">
                 <form style="direction: rtl; width: 50%;">
                     <div class="form-row">
-                        <div class="form-group col-md-2">
+                        <div class="col-md-4">
+                            <label for="taskType" class="form-label">סוג המשימות</label>
+                            <select class="form-control" id="taskType">
+                                <option value="0">צבירה אישית</option>
+                                <option value="1">צבירה כללית</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row" id="uniqTaskConfig">
+                        <div class="col-md-2">
                             <label for="title" class="form-label">עמדות</label>
                             <input type="number" class="form-control" id="numPosition" min="1">
                         </div>
 
-                        <div class="form-group col-md-4" id="numStudents">
+                        <div class="col-md-4" id="numStudents">
                             <label for="numPosition1" class="form-label">מספר בנות בעמדה</label>
                         </div>
-
-                        <div class="form-group col-md-4" id="numClasses">
-                            <label for="numPosition1" class="form-label">מספר כיתות בעמדה</label>
-                        </div>
-
-                        <div class="form-group col-md-2">
+                    </div>
+                    <div class="form-row">
+                        <div class="col-md-2">
                             <label for="numPosition1" class="form-label">.</label>
                             <button type="button" onclick="create()" class="form-control">התחל</button>
                         </div>
                     </div>
                 </form>
                 <div style="width:50%;height: 300px;">
-                    <button style="border:aliceblue;margin-left: 75%" onclick="New()">הוספת משימה</button>
+                    <button style="border:aliceblue;margin-left: 75%" onclick="newTask()">הוספת משימה</button>
                     <div id="tasksGrid" style="width:100%;height: 300px;" class="ag-theme-alpine"></div>
                 </div>
             </div>

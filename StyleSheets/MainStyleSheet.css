@@ -1,7 +1,4 @@
-﻿@font-face {
-    font-family: "myFirstFont";
-    src:url("../fonts/GanCLMBold.ttf");
-}
+﻿
 body, html {
     height: 100%;
     margin: 0;
@@ -13,7 +10,6 @@ body, html {
     background-size: cover;
     z-index: -1;
     padding-top: 2.5%;
-    font-family: "myFirstFont";
     padding-bottom: 2.5%;
 }
 
