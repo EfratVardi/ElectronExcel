@@ -17,41 +17,61 @@
     <script src="js/xlsx.full.min.js"></script>
 
     <script>
-        var gridOptions1
-        var gridOptions2
+        const table1 = {
+            columnDefs: [
+                { headerName: 'קוד', field: "id", hide: true },
+                { headerName: "שם", field: "name", editable: true },
+                { headerName: "נקודות", field: "points", editable: true },
+                { headerName: "כמות", field: "sum", editable: true }
+            ],
+            rowData: [{
+                "id": 0,
+                "name": "משימה ראשונה",
+                "points": 100,
+                "sum": 1
+            },
+            {
+                "id": 1,
+                "name": "משימה שנייה",
+                "points": 50,
+                "sum": 2
+            }
+            ]
+        };
 
-        // [{
-        //     "id": 0,
-        //     "name": "",
-        //     "points": 0,
-        //     "sum": 1        // }
-        // ]
-        var defaultTask1 = [{
-            "id": 0,
-            "name": "משימה ראשונה",
-            "points": 100,
-            "sum": 1
-        },
-        {
-            "id": 1,
-            "name": "משימה שנייה",
-            "points": 50,
-            "sum": 2
+        const table2 = {
+            columnDefs: [
+                { headerName: 'קוד', field: "id", hide: true },
+                { headerName: "שם", field: "name", editable: true },
+                { headerName: "נקודות", field: "points", editable: true },
+                {
+                    headerName: "הגשה מרובה", field: "multiple",
+                    editable: true,
+                    cellRenderer: 'agCheckboxCellRenderer',
+                    cellEditor: 'agCheckboxCellEditor',
+                    editable: true,
+                    suppressKeyboardEvent: (params) => params.event.key === ' ',
+                }
+            ],
+            rowData: [{
+                "id": 0,
+                "name": "משימה ראשונה",
+                "points": 100,
+                "multiple": true
+            },
+            {
+                "id": 1,
+                "name": "משימה שנייה",
+                "points": 50,
+                "multiple": false
+            }
+            ]
+        };
+
+        var gridOptions = {
+            columnDefs: table1.columnDefs,
+            rowData: table1.rowData, enableRtl: true
         }
-        ]
-        var defaultTask2 = [{
-            "id": 0,
-            "name": "משימה ראשונה",
-            "points": 100,
-            "multiple": true
-        },
-        {
-            "id": 1,
-            "name": "משימה שנייה",
-            "points": 50,
-            "multiple": false
-        }
-        ]
         var tasks = [];
         var excelTasks = []
         var countInPage = 44
@@ -67,43 +87,16 @@
 
         function onLoad() {
             document.getElementById("background").style.backgroundImage = "url('resources/pinkBackground4.gif')"
-            const taskType = document.getElementById('taskType');
-            if (taskType.value == "0") {
-                gridOptions1 = {
-                    columnDefs: [
-                        { headerName: 'קוד', field: "id", hide: true },
-                        { headerName: "שם", field: "name", editable: true, minWidth: 300 },
-                        { headerName: "נקודות", field: "points", editable: true },
-                        { headerName: "כמות", field: "sum", editable: true }
-                    ],
-                    rowData: defaultTask,
-                    enableRtl: true,
-                    onFirstDataRendered: onFirstDataRendered,
-                };
-                var gridDiv = document.querySelector('#tasksGrid');
-                new agGrid.Grid(gridDiv, gridOptions1);
-            }
-            else {
-                gridOptions2 = {
-                    columnDefs: [
-                        { headerName: 'קוד', field: "id", hide: true },
-                        { headerName: "שם", field: "name", editable: true, minWidth: 300 },
-                        { headerName: "נקודות", field: "points", editable: true },
-                        { headerName: "הגשה מרובה", field: "multiple", editable: true }
-                    ],
-                    rowData: defaultTask2,
-                    enableRtl: true,
-                    onFirstDataRendered: onFirstDataRendered,
-                };
-                var gridDiv = document.querySelector('#tasksGrid');
-                new agGrid.Grid(gridDiv, gridOptions2);
-            }
+            var gridDiv = document.querySelector('#tasksGrid');
+            new agGrid.Grid(gridDiv, gridOptions);
 
+            const taskType = document.getElementById('taskType');
+            taskType.addEventListener('change', function () {
+                taskTypeChange()
+            })
 
             const numPosition = document.getElementById('numPosition');
             const numStudents = document.getElementById('numStudents');
-
-
             numPosition.addEventListener('input', function () {
                 const inputElements1 = numStudents.querySelectorAll('input');
 
@@ -120,24 +113,39 @@
                     numStudents.appendChild(newInput1);
                 }
             });
-
-            taskType.addEventListener('change', function () {
-                taskType.value == '1' ?
-                    uniqTaskConfig.style.visibility = "hidden" :
-                    uniqTaskConfig.style.visibility = "visible";
-            })
         }
 
+        function taskTypeChange() {
+            if (taskType.value == "0") {
+                uniqTaskConfig.style.visibility = "visible";
+                gridOptions.api.setColumnDefs(table1.columnDefs);
+                gridOptions.api.setRowData(table1.rowData);
+            }
+            else {
+                uniqTaskConfig.style.visibility = "hidden"
+                gridOptions.api.setColumnDefs(table2.columnDefs);
+                gridOptions.api.setRowData(table2.rowData);
+            }
+            tasks = [];
+            excelTasks = []
+
+        }
         function start() {
             taskType.value == "1" ? createTasks() : createUniqTasks();
             showStatistics()
         }
 
         function createTasks() {
-
+            code = ('51') * 10000000
+            gridOptions.rowData.forEach(task => {
+                excelTasks.push({
+                    name: task.name, code: code, barcode: '*' + (code) + '*',
+                    points: task.points, multiple: task.multiple
+                })
+                code++
+            })
             downLoadExcel("כרטיסים", FileType.TEXT)
             downLoadExcel("uniqTasks", FileType.EXCEL)
-
         }
 
         function createUniqTasks() {
@@ -232,12 +240,11 @@
         }
 
         function showStatistics() {
-
-        }
-
-        function onFirstDataRendered(params) {
-            gridOptions.api.sizeColumnsToFit({
-            });
+            const statistics = document.getElementById("statistics")
+            for (let i = 1; i <= countPosition; i++) {
+                position = i;
+            }
+            statistics.innerHTML = "גלילים:"
         }
 
         function newTask() {
@@ -285,10 +292,13 @@
                     <div class="form-row">
                         <div class="col-md-2">
                             <label for="numPosition1" class="form-label">.</label>
-                            <button type="button" onclick="create()" class="form-control">התחל</button>
+                            <button type="button" onclick="start()" class="form-control">התחל</button>
                         </div>
                     </div>
                 </form>
+                <div id="statistics">
+
+                </div>
                 <div style="width:50%;height: 300px;">
                     <button style="border:aliceblue;margin-left: 75%" onclick="newTask()">הוספת משימה</button>
                     <div id="tasksGrid" style="width:100%;height: 300px;" class="ag-theme-alpine"></div>
