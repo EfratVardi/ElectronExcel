@@ -26,13 +26,13 @@
             ],
             rowData: [{
                 "id": 0,
-                "name": "משימה ראשונה",
+                "name": "פרטי",
                 "points": 100,
                 "sum": 1
             },
             {
                 "id": 1,
-                "name": "משימה שנייה",
+                "name": "פרטי ",
                 "points": 50,
                 "sum": 2
             }
@@ -55,13 +55,13 @@
             ],
             rowData: [{
                 "id": 0,
-                "name": "משימה ראשונה",
+                "name": "כללי ",
                 "points": 100,
                 "multiple": true
             },
             {
                 "id": 1,
-                "name": "משימה שנייה",
+                "name": "כללי ",
                 "points": 50,
                 "multiple": false
             }
@@ -74,11 +74,12 @@
         }
         var tasks = [];
         var excelTasks = []
+        var paperRollLengh = 80000;
         var countInPage = 44
         var numtasks
         var countTasksInPage
         var code
-        var position
+        var position = ""
 
         const FileType = {
             EXCEL: "excel",
@@ -95,16 +96,16 @@
                 taskTypeChange()
             })
 
-            const numPosition = document.getElementById('numPosition');
+            const countPosition = document.getElementById('countPosition');
             const numStudents = document.getElementById('numStudents');
-            numPosition.addEventListener('input', function () {
+            countPosition.addEventListener('input', function () {
                 const inputElements1 = numStudents.querySelectorAll('input');
 
                 inputElements1.forEach((inputElement) => {
                     numStudents.removeChild(inputElement);
                 });
 
-                for (let i = 1; i <= numPosition.value; i++) {
+                for (let i = 1; i <= countPosition.value; i++) {
                     const newInput1 = document.createElement('input');
                     newInput1.type = 'number';
                     newInput1.id = 'numStudents' + i;
@@ -117,12 +118,10 @@
 
         function taskTypeChange() {
             if (taskType.value == "0") {
-                uniqTaskConfig.style.visibility = "visible";
                 gridOptions.api.setColumnDefs(table1.columnDefs);
                 gridOptions.api.setRowData(table1.rowData);
             }
             else {
-                uniqTaskConfig.style.visibility = "hidden"
                 gridOptions.api.setColumnDefs(table2.columnDefs);
                 gridOptions.api.setRowData(table2.rowData);
             }
@@ -132,12 +131,11 @@
         }
         function start() {
             taskType.value == "1" ? createTasks() : createUniqTasks();
-            showStatistics()
         }
 
         function createTasks() {
             code = ('51') * 10000000
-            gridOptions.rowData.forEach(task => {
+            table2.rowData.forEach(task => {
                 excelTasks.push({
                     name: task.name, code: code, barcode: '*' + (code) + '*',
                     points: task.points, multiple: task.multiple
@@ -146,12 +144,12 @@
             })
             downLoadExcel("כרטיסים", FileType.TEXT)
             downLoadExcel("uniqTasks", FileType.EXCEL)
+            showStatistics()
         }
 
         function createUniqTasks() {
             fixTasks()
-            let countPosition = document.getElementById('numPosition').value;
-            for (let i = 1; i <= countPosition; i++) {
+            for (let i = 1; i <= countPosition.value; i++) {
                 position = i;
                 let numStudents = document.getElementById('numStudents' + position).value * 1.05;
                 let countPages = Math.round(numStudents / countTasksInPage)
@@ -159,12 +157,13 @@
                 downLoadExcel("כרטיסים", FileType.TEXT)
                 removeBlanks()
                 downLoadExcel("uniqTasks", FileType.EXCEL)
+                showStatistics()
             }
         }
 
         function fixTasks() {
             tasks = [];
-            gridOptions.rowData.forEach(element => {
+            table1.rowData.forEach(element => {
                 for (let i = 0; i < element.sum; i++) {
                     tasks.push({ "name": element.name, "points": element.points })
                 }
@@ -206,7 +205,7 @@
         }
 
         function removeBlanks() {
-            const excelTasks = excelTasks.filter(obj => Object.keys(obj).length > 0);
+            excelTasks = excelTasks.filter(obj => Object.keys(obj).length > 0);
         }
 
 
@@ -235,29 +234,51 @@
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                URL.revokeObjectURL(url); // Free up memory
+                URL.revokeObjectURL(url);
             }
         }
 
         function showStatistics() {
             const statistics = document.getElementById("statistics")
-            for (let i = 1; i <= countPosition; i++) {
-                position = i;
+            let numRoll
+            let numStudents
+            if (taskType.value == "0") {
+                numRoll = (excelTasks.length * 11) / paperRollLengh
+                statistics.innerHTML += "<br>" + "עמדה " + position + ": " + numRoll
             }
-            statistics.innerHTML = "גלילים:"
+            else {
+                for (let i = 1; i <= countPosition.value; i++) {
+                    numStudents = document.getElementById('numStudents' + i).value;
+                    numRoll = (numStudents * excelTasks.length * 11) / paperRollLengh
+                    statistics.innerHTML += "עמדה " + i + " גלילים: " + numRoll
+                }
+            }
         }
 
         function newTask() {
-            let data = gridOptions.rowData;
-            data.push({
-                "id": data[data.length - 1].id + 1,
-                "name": "",
-                "points": 0,
-                "sum": 1
-            })
+            let data
+            if (taskType.value == "0") {
+                data = table1.rowData
+                data.push({
+                    "id": data[data.length - 1].id + 1,
+                    "name": "",
+                    "points": 0,
+                    "sum": 1
+                })
+                table1.rowData = data;
+            }
+            else {
+                data = table2.rowData
+                data.push({
+                    "id": data[data.length - 1].id + 1,
+                    "name": "",
+                    "points": 0,
+                    "multiple": false
+                })
+                table2.rowData = data;
+            }
             gridOptions.api.setRowData(data);
         }
-
     </script>
 
     <div class="background" id="background">
@@ -282,23 +303,28 @@
                     <div class="form-row" id="uniqTaskConfig">
                         <div class="col-md-2">
                             <label for="title" class="form-label">עמדות</label>
-                            <input type="number" class="form-control" id="numPosition" min="1">
+                            <input type="number" class="form-control" id="countPosition" min="1">
                         </div>
 
                         <div class="col-md-4" id="numStudents">
-                            <label for="numPosition1" class="form-label">מספר בנות בעמדה</label>
+                            <label class="form-label">מספר בנות בעמדה</label>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="col-md-2">
-                            <label for="numPosition1" class="form-label">.</label>
+                            <label for="countPosition1" class="form-label">.</label>
                             <button type="button" onclick="start()" class="form-control">התחל</button>
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div class="col-md-6">
+                            <div id="statistics">
+                                <b>גלילים</b>
+                            </div>
+                        </div>
+                    </div>
                 </form>
-                <div id="statistics">
 
-                </div>
                 <div style="width:50%;height: 300px;">
                     <button style="border:aliceblue;margin-left: 75%" onclick="newTask()">הוספת משימה</button>
                     <div id="tasksGrid" style="width:100%;height: 300px;" class="ag-theme-alpine"></div>
