@@ -1,6 +1,6 @@
 {
   "name": "excel",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Write notes by barcode scanner",
   "main": "main.js",
   "scripts": {
