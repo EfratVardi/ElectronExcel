@@ -33,29 +33,6 @@
             ]
         };
 
-        const table2 = {
-            columnDefs: [
-                { headerName: 'קוד', field: "id", hide: true },
-                { headerName: "שם", field: "name", editable: true },
-                { headerName: "נקודות", field: "points", editable: true },
-                {
-                    headerName: "הגשה מרובה", field: "multiple",
-                    editable: true,
-                    cellRenderer: 'agCheckboxCellRenderer',
-                    cellEditor: 'agCheckboxCellEditor',
-                    editable: true,
-                    suppressKeyboardEvent: (params) => params.event.key === ' ',
-                }
-            ],
-            rowData: [{
-                "id": 0,
-                "name": "כללי ",
-                "points": 100,
-                "multiple": false
-            }
-            ]
-        };
-
         var gridOptions = {
             columnDefs: table1.columnDefs,
             rowData: table1.rowData
@@ -79,11 +56,6 @@
             var gridDiv = document.querySelector('#tasksGrid');
             new agGrid.Grid(gridDiv, gridOptions);
 
-            const taskType = document.getElementById('taskType');
-            taskType.addEventListener('change', function () {
-                taskTypeChange()
-            })
-
             const countPosition = document.getElementById('countPosition');
             const numStudents = document.getElementById('numStudents');
             countPosition.addEventListener('input', function () {
@@ -104,37 +76,6 @@
             });
         }
 
-        function taskTypeChange() {
-            if (taskType.value == "0") {
-                gridOptions.api.setColumnDefs(table1.columnDefs);
-                gridOptions.api.setRowData(table1.rowData);
-            }
-            else {
-                gridOptions.api.setColumnDefs(table2.columnDefs);
-                gridOptions.api.setRowData(table2.rowData);
-            }
-            tasks = [];
-            excelTasks = []
-
-        }
-        function start() {
-            taskType.value == "1" ? createTasks() : createUniqTasks();
-        }
-
-        function createTasks() {
-            code = ('51') * 10000000
-            table2.rowData.forEach(task => {
-                excelTasks.push({
-                    name: task.name, code: code, barcode: '*' + (code) + '*',
-                    points: task.points, multiple: task.multiple
-                })
-                code++
-            })
-            downLoadExcel("כרטיסים", FileType.TEXT)
-            downLoadExcel("uniqTasks", FileType.EXCEL)
-            showStatistics()
-        }
-
         function createUniqTasks() {
             fixTasks()
             for (let i = 1; i <= countPosition.value; i++) {
@@ -145,7 +86,6 @@
                 downLoadExcel("כרטיסים", FileType.TEXT)
                 removeBlanks()
                 downLoadExcel("uniqTasks", FileType.EXCEL)
-                showStatistics()
             }
         }
 
@@ -226,45 +166,15 @@
             }
         }
 
-        function showStatistics() {
-            const statistics = document.getElementById("statistics")
-            let numRoll
-            let numStudents
-            if (taskType.value == "0") {
-                numRoll = (excelTasks.length * 11) / paperRollLengh
-                statistics.innerHTML += "<br>" + "עמדה " + position + ": " + numRoll
-            }
-            else {
-                for (let i = 1; i <= countPosition.value; i++) {
-                    numStudents = document.getElementById('numStudents' + i).value;
-                    numRoll = (numStudents * excelTasks.length * 11) / paperRollLengh
-                    statistics.innerHTML += "עמדה " + i + " גלילים: " + numRoll
-                }
-            }
-        }
-
         function newTask() {
-            let data
-            if (taskType.value == "0") {
-                data = table1.rowData
-                data.push({
-                    "id": data[data.length - 1].id + 1,
-                    "name": "",
-                    "points": 0,
-                    "sum": 1
-                })
-                table1.rowData = data;
-            }
-            else {
-                data = table2.rowData
-                data.push({
-                    "id": data[data.length - 1].id + 1,
-                    "name": "",
-                    "points": 0,
-                    "multiple": false
-                })
-                table2.rowData = data;
-            }
+            data = table1.rowData
+            data.push({
+                "id": data[data.length - 1].id + 1,
+                "name": "",
+                "points": 0,
+                "sum": 1
+            })
+            table1.rowData = data;
             gridOptions.api.setRowData(data);
         }
     </script>
@@ -279,15 +189,6 @@
 
             <div style="display: flex;">
                 <form style="direction: rtl; width: 45%;">
-                    <div class="form-row">
-                        <div class="col-md-4">
-                            <label for="taskType" class="form-label">סוג המשימות</label>
-                            <select class="form-control" id="taskType">
-                                <option value="0">צבירה אישית</option>
-                                <option value="1">צבירה כללית</option>
-                            </select>
-                        </div>
-                    </div>
                     <div class="form-row" id="uniqTaskConfig">
                         <div class="col-md-2">
                             <label for="title" class="form-label">עמדות</label>
@@ -301,14 +202,7 @@
                     <div class="form-row">
                         <div class="col-md-2">
                             <label for="countPosition1" class="form-label">.</label>
-                            <button type="button" onclick="start()" class="form-control">התחל</button>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="col-md-6">
-                            <div id="statistics">
-                                <b>גלילים</b>
-                            </div>
+                            <button type="button" onclick="createUniqTasks()" class="form-control">התחל</button>
                         </div>
                     </div>
                 </form>
